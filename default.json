@@ -1,0 +1,8 @@
+{
+    "token": "YOUR_TOKEN",
+    "port": 3000,
+    "ngrok_API_key": "YOUR_TOKEN",
+    "DBname": "DATABASE_NAME",
+    "DBtableName": "TABLE_NAME",
+    "DBpassword": "PASSWORD_FOR_USER"
+}
