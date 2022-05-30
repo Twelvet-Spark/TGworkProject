@@ -5,8 +5,25 @@
 import TelegramBot from "node-telegram-bot-api";
 import config from "config";
 import { Ngrok } from "@ngrok/ngrok-api";
-import readline from 'readline'
+import readline from 'readline';
+import mysql from "mysql";
 
+
+// Creating db object
+const db = mysql.createConnection({
+  host: 'localhost',
+  user: 'root',
+  password: config.get('DBpassword'),
+  database: 'usersdb'
+});
+
+// Connecting to db
+db.connect((err) => {
+  if(err){
+    throw err;
+  }
+  console.log('MySql connected...')
+});
 
 // Setting up input
 let rl = readline.createInterface({
@@ -140,11 +157,71 @@ bot.onText(/\/myinfo/, msg => {
   bot.sendMessage(id, messageText)
 });
 
-// Intro
-bot.onText(/\/start/, msg => {
-  const {chat: {id, first_name}} = msg
+// Write User to Data Base
+bot.onText(/\/write/, msg => {
+  const { chat: { id, first_name, last_name }} = msg
+
+  const post = {firstname: first_name, lastname: last_name, chatid: id}
+  
+  const sql = `
+  SELECT ${config.get('DBtableName')}.id AS id,	${config.get('DBtableName')}.firstname AS firstname, ${config.get('DBtableName')}.lastname AS lastname, ${config.get('DBtableName')}.chatid AS chatid, ${config.get('DBtableName')}.phonenumber AS phonenumber, ${config.get('DBtableName')}.insertdate AS insertdate
+  FROM ${config.get('DBname')}.${config.get('DBtableName')}
+  WHERE chatid=?
+  ;`
+  db.query(sql, post.chatid, (err, result) => {
+    if(err) throw err
+    console.log(result) // DEBUG PURPOSE:
+    console.log(result.length) // DEBUG PURPOSE:
+    if (result.length != 0) {
+      console.log(`Yeah, i have ${result.length} records`)
+      bot.sendMessage(id, `Вы уже находитесь в базе данных, дата вашего добавления: \n${Date(result[0].insertdate)}`)
+    }
+    else if (result.length == 0) {
+      console.log("Nope, i don't have any records")
+
+      post.insertdate = Date.now()
+
+      db.query(`INSERT INTO ${config.get('DBtableName')} SET ?`, post, (err2, result2) => {
+        if(err) throw err2
+        console.log(result2) // DEBUG PURPOSE:
+        console.log(`USER ${post.firstname} ADDED TO ${config.get('DBname')} DATABASE, ${config.get('DBtableName')} TABLE AND ${result2.insertId} ID`)
+        bot.sendMessage(id, "Вы были добавлены в базу данных")
+      })
+    }
+  })
 });
 
+// Debug function
+bot.onText(/\/del/, msg => {
+  const { chat: { id }} = msg
+  let sql = `DELETE FROM ${config.get('DBname')}.${config.get('DBtableName')} WHERE ${config.get('DBtableName')}.id BETWEEN 0 AND 10000;`
+  db.query(sql, (err, result) => {
+    if(err) throw err
+    console.log(result) // DEBUG PURPOSE:
+    bot.sendMessage(id, `Таблица ${config.get('DBtableName')} в базе данных ${config.get('DBname')} очищено записей: ${result.affectedRows}`)
+  })
+})
+
+// Query User number
+bot.onText(/\/givenumber/, msg => {
+  const { chat: { id, first_name, username }} = msg  
+  bot.sendMessage(id, 'Share: ', {
+    reply_markup: {
+      one_time_keyboard: true,
+      keyboard: [[{
+        text: "Give my phone number",
+        request_contact: true,
+        request_location: true
+      }], ["Cancel"]]
+    }
+  })
+});
+
+// Intro
+bot.onText(/\/info/, msg => {
+  const {chat: {id, first_name}} = msg
+  bot.sendMessage(id, `Привет ${first_name}, я бот созданный на языке JavaScript и я помогу тебе научиться бережно относиться к своим личным данным.`)
+});
 
 // Поделить messageText
 // Написать начало теории о безопасности личных данных
