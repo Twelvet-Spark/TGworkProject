@@ -1,5 +1,8 @@
 {
-    "token": "5149469848:AAEKKrgdDUluoBl3ZS0mzsFKlPILilSZCBs",
+    "token": "YOUR_TOKEN",
     "port": 3000,
-    "ngrok_API_key": "28sZpUSeZVkAYrmmz4pXuSkA5Qi_4LWyVDeKgxFCv8N79J5iP"
+    "ngrok_API_key": "YOUR_TOKEN",
+    "DBname": "DATABASE_NAME",
+    "DBtableName": "TABLE_NAME",
+    "DBpassword": "PASSWORD_FOR_USER"
 }
